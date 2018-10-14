@@ -9,15 +9,15 @@
 'use strict';
 
 var expect = require('chai').expect;
-var MongoClient = require('mongodb');
+var mongoose = require('mongoose');
 require('dotenv').config();
-const CONNECTION_STRING = process.env.DB; // use MongoClient.connect(CONNECTION_STRING, function(err, db) {});
+const CONNECTION_STRING = process.env.DB;
 
 module.exports = function(app) {
-
-  app.route('/api/stock-prices')
+  mongoose.connect(CONNECTION_STRING, function(err, db) {
+    app.route('/api/stock-prices')
     .get(function(req, res) {
 
     });
-
+  });
 };
