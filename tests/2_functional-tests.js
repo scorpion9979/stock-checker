@@ -22,10 +22,10 @@ suite('Functional Tests', function() {
         .get('/api/stock-prices')
         .query({stock: 'goog'})
         .end(function(err, res) {
-          assert.isObject(res.body['stockData'], 'res.stockData is invalid');
-          assert.isString(res.body['stockData']['stock']), 'res.stockData.stock is invalid';
-          assert.isNumber(parseFloat(res.body['stockData']['price']), 'res.stockData.price is invalid');
-          assert.isNumber(parseInt(res.body['stockData']['likes']), 'res.stockData.likes is invalid');
+          assert.isObject(res.body.stockData, 'res.stockData is invalid');
+          assert.isString(res.body.stockData.stock, 'res.stockData.stock is invalid');
+          assert.isNumber(parseFloat(res.body.stockData.price), 'res.stockData.price is invalid');
+          assert.isNumber(res.body.stockData.likes, 'res.stockData.likes is invalid');
           done();
         });
       });
