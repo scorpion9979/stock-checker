@@ -10,6 +10,7 @@
 
 var expect = require('chai').expect;
 var mongoose = require('mongoose');
+var async = require('async');
 require('dotenv').config();
 const CONNECTION_STRING = process.env.DB;
 
@@ -22,57 +23,61 @@ const stockSchema = new Schema({
 });
 const Stock = mongoose.model('Stock', stockSchema);
 
-const handleStock = function(stock, isLiked, clientIP, callback) {
-  if (isLiked && stock.likeIPs.indexOf(clientIP) === -1) {
-    stock.likes += 1;
-    stock.likeIPs.push(clientIP);
-  }
-  stock.save(callback);
-};
-
 module.exports = function(app) {
 
   app.route('/api/stock-prices')
      .get(function(req, res) {
-       let ticker = req.query.stock;
+       let tickers = [req.query.stock].reduce((a, b) => a.concat(b), []);
        let clientIP = (req.header('x-forwarded-for') || req.connection.remoteAddress).split(':').slice(-1)[0];
        let isLiked = req.query.like;
-       Stock.find({ticker: ticker}, function(err, stocks) {
-        if (err) {
-          res.status(400)
-             .send(err);
-        } else if (stocks.length === 0) {
-          let s = new Stock({ticker: ticker});
-          handleStock(s, isLiked, clientIP, function(e, doc) {
-            if (e) {
-              res.status(400)
-                 .send(err);
-            } else {
-              res.send({
-                stockData: {
-                  stock: doc.ticker,
-                  price: '0',
-                  likes: doc.likes,
-                },
-               });
-            }
+       // map tickers array to array of updated stocks (from db)
+       // async mini-tutorial:
+       // https://stackoverflow.com/questions/18672601/mongoose-executing-a-query-for-each-array-element
+       async.map(tickers, function(t, next) {
+        Stock.findOne({ticker: t}, function(err, stock) {
+          if (!stock) {
+            stock = new Stock({ticker: t});
+          }
+          if (isLiked && stock.likeIPs.indexOf(clientIP) === -1) {
+            stock.likes += 1;
+            stock.likeIPs.push(clientIP);
+          }
+          stock.save();
+          next(err, stock);
+        });
+       }, function(err, stocks) {
+         if (stocks.length === 1) {
+          res.send({
+            stockData: {
+              stock: stocks[0].ticker,
+              price: '0',
+              likes: stocks[0].likes,
+            },
           });
         } else {
-          handleStock(stocks[0], isLiked, clientIP, function(e, doc) {
-            if (e) {
-              res.status(400)
-                 .send(err);
-            } else {
-              res.send({
-                stockData: {
-                  stock: doc.ticker,
-                  price: '0',
-                  likes: doc.likes,
-                },
-               });
-            }
+          let likes = stocks.map(e => e.likes);
+          res.send({
+            stockData: stocks.map(e => {
+              let distMin = e.likes - Math.min(...likes);
+              let distMax =  Math.max(...likes) - e.likes;
+              return ({
+              stock: e.ticker,
+              price: '0',
+              rel_likes: distMax > distMin ? -distMax : distMin});
+            }),
           });
         }
-      });
+       });
+     })
+     .delete(function(req, res) {
+       let testTickers = [{ticker: 'test_stock'}, {ticker: 'test_stock1'}, {ticker: 'test_stock2'}];
+       Stock.remove({$or: testTickers}, function(err) {
+         if (err) {
+           res.statue(400)
+              .send('error deleting test stocks');
+         } else {
+           res.send('test stocks deleted successfully');
+         }
+       });
      });
 };
