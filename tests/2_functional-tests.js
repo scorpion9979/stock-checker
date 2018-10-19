@@ -20,7 +20,7 @@ suite('Functional Tests', function() {
       test('1 stock', function(done) {
        chai.request(server)
         .get('/api/stock-prices')
-        .query({stock: 'test_stock'})
+        .query({stock: 'aes'})
         .end(function(err, res) {
           assert.isObject(res.body.stockData, 'res.stockData is invalid');
           assert.isString(res.body.stockData.stock, 'res.stockData.stock is invalid');
@@ -33,7 +33,7 @@ suite('Functional Tests', function() {
       test('1 stock with like', function(done) {
         chai.request(server)
         .get('/api/stock-prices')
-        .query({stock: 'test_stock', like: true})
+        .query({stock: 'aes', like: true})
         .end(function(err, res) {
           assert.equal(res.body.stockData.likes, 1, 'likes weren\'t updated');
           done();
@@ -43,7 +43,7 @@ suite('Functional Tests', function() {
       test('1 stock with like again (ensure likes arent double counted)', function(done) {
         chai.request(server)
         .get('/api/stock-prices')
-        .query({stock: 'test_stock', like: true})
+        .query({stock: 'aes', like: true})
         .end(function(err, res) {
           assert.equal(res.body.stockData.likes, 1, 'likes weren\'t updated');
           done();
@@ -53,7 +53,7 @@ suite('Functional Tests', function() {
       test('2 stocks', function(done) {
         chai.request(server)
         .get('/api/stock-prices')
-        .query({stock: ['test_stock', 'test_stock1']})
+        .query({stock: ['aes', 'amg']})
         .end(function(err, res) {
           assert.isArray(res.body.stockData, 'res.stockData is invalid');
           res.body.stockData.forEach(stockData => {
@@ -68,7 +68,7 @@ suite('Functional Tests', function() {
       test('2 stocks with like', function(done) {
         chai.request(server)
         .get('/api/stock-prices')
-        .query({stock: ['test_stock', 'test_stock1'], like: true})
+        .query({stock: ['aes', 'amg'], like: true})
         .end(function(err, res) {
           res.body.stockData.forEach(stockData => {
             assert.equal(stockData.rel_likes, 0, 'likes weren\'t updated');

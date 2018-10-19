@@ -11,6 +11,7 @@
 var expect = require('chai').expect;
 var mongoose = require('mongoose');
 var async = require('async');
+var fetch = require('node-fetch');
 require('dotenv').config();
 const CONNECTION_STRING = process.env.DB;
 
@@ -33,44 +34,51 @@ module.exports = function(app) {
        // map tickers array to array of updated stocks (from db)
        // async mini-tutorial:
        // https://stackoverflow.com/questions/18672601/mongoose-executing-a-query-for-each-array-element
-       async.map(tickers, function(t, next) {
-        Stock.findOne({ticker: t}, function(err, stock) {
-          if (!stock) {
-            stock = new Stock({ticker: t});
-          }
-          if (isLiked && stock.likeIPs.indexOf(clientIP) === -1) {
-            stock.likes += 1;
-            stock.likeIPs.push(clientIP);
-          }
-          stock.save();
-          next(err, stock);
-        });
-       }, function(err, stocks) {
-         if (stocks.length === 1) {
-          res.send({
-            stockData: {
-              stock: stocks[0].ticker,
-              price: '0',
-              likes: stocks[0].likes,
-            },
+       fetch('https://api.iextrading.com/1.0/stock/market/batch?types=price&symbols=' + tickers.join(','))
+       .then(data => data.json())
+       .then(prices => {
+        async.map(tickers, function(t, next) {
+          Stock.findOne({ticker: t}, function(err, stock) {
+            if (!stock) {
+              stock = new Stock({ticker: t});
+            }
+            if (isLiked && stock.likeIPs.indexOf(clientIP) === -1) {
+              stock.likes += 1;
+              stock.likeIPs.push(clientIP);
+            }
+            stock.save();
+            next(err, stock);
           });
-        } else {
-          let likes = stocks.map(e => e.likes);
-          res.send({
-            stockData: stocks.map(e => {
-              let distMin = e.likes - Math.min(...likes);
-              let distMax =  Math.max(...likes) - e.likes;
-              return ({
-              stock: e.ticker,
-              price: '0',
-              rel_likes: distMax > distMin ? -distMax : distMin});
-            }),
-          });
-        }
+         }, function(err, stocks) {
+          if (Object.keys(prices).length !== stocks.length) {
+            res.status(400)
+               .send('invalid request');
+          } else if (stocks.length === 1) {
+            res.send({
+              stockData: {
+                stock: stocks[0].ticker,
+                price: prices[stocks[0].ticker.toUpperCase()].price,
+                likes: stocks[0].likes,
+              },
+            });
+          } else {
+            let likes = stocks.map(e => e.likes);
+            res.send({
+              stockData: stocks.map((e, i) => {
+                let distMin = e.likes - Math.min(...likes);
+                let distMax =  Math.max(...likes) - e.likes;
+                return ({
+                stock: e.ticker,
+                price: prices[e.ticker.toUpperCase()].price,
+                rel_likes: distMax > distMin ? -distMax : distMin});
+              }),
+            });
+          }
+         });
        });
      })
      .delete(function(req, res) {
-       let testTickers = [{ticker: 'test_stock'}, {ticker: 'test_stock1'}, {ticker: 'test_stock2'}];
+       let testTickers = [{ticker: 'aes'}, {ticker: 'amg'}];
        Stock.remove({$or: testTickers}, function(err) {
          if (err) {
            res.statue(400)
