@@ -18,6 +18,7 @@ suite('Functional Tests', function() {
     suite('GET /api/stock-prices => stockData object', function() {
 
       test('1 stock', function(done) {
+       this.timeout(15000);
        chai.request(server)
         .get('/api/stock-prices')
         .query({stock: 'aes'})
@@ -31,6 +32,7 @@ suite('Functional Tests', function() {
       });
 
       test('1 stock with like', function(done) {
+        this.timeout(15000);
         chai.request(server)
         .get('/api/stock-prices')
         .query({stock: 'aes', like: true})
@@ -41,6 +43,7 @@ suite('Functional Tests', function() {
       });
 
       test('1 stock with like again (ensure likes arent double counted)', function(done) {
+        this.timeout(15000);
         chai.request(server)
         .get('/api/stock-prices')
         .query({stock: 'aes', like: true})
@@ -51,6 +54,7 @@ suite('Functional Tests', function() {
       });
 
       test('2 stocks', function(done) {
+        this.timeout(15000);
         chai.request(server)
         .get('/api/stock-prices')
         .query({stock: ['aes', 'amg']})
@@ -66,6 +70,7 @@ suite('Functional Tests', function() {
       });
 
       test('2 stocks with like', function(done) {
+        this.timeout(15000);
         chai.request(server)
         .get('/api/stock-prices')
         .query({stock: ['aes', 'amg'], like: true})
@@ -78,6 +83,7 @@ suite('Functional Tests', function() {
       });
 
       test('remove all test stocks', function(done) {
+        this.timeout(15000);
         chai.request(server)
         .del('/api/stock-prices')
         .end(function(err, res) {
