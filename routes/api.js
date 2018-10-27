@@ -29,7 +29,7 @@ module.exports = function(app) {
   app.route('/api/stock-prices')
      .get(function(req, res) {
        let tickers = [req.query.stock].reduce((a, b) => a.concat(b), []);
-       let clientIP = (req.header('x-forwarded-for') || req.connection.remoteAddress).split(':').slice(-1)[0];
+       let clientIP = (req.header('x-real-ip') || req.connection.remoteAddress).split(':').slice(-1)[0];
        let isLiked = req.query.like;
        // map tickers array to array of updated stocks (from db)
        // async mini-tutorial:
